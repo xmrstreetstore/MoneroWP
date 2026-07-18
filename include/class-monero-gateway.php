@@ -22,6 +22,7 @@ class Monero_Gateway extends WC_Payment_Gateway
     private static $confirm_type = null;
     private static $address = null;
     private static $viewkey = null;
+    private static $explorer_url = null;
     private static $host = null;
     private static $port = null;
     private static $testnet = false;
@@ -76,6 +77,7 @@ class Monero_Gateway extends WC_Payment_Gateway
         self::$confirm_type = $this->settings['confirm_type'];
         self::$address = $this->settings['monero_address'];
         self::$viewkey = $this->settings['viewkey'];
+        self::$explorer_url = trim($this->settings['explorer_url']);
         self::$host = $this->settings['daemon_host'];
         self::$port = $this->settings['daemon_port'];
         self::$testnet = $this->settings['testnet'] == 'yes';
@@ -84,7 +86,8 @@ class Monero_Gateway extends WC_Payment_Gateway
         self::$use_monero_price = $this->settings['use_monero_price'] == 'yes';
         self::$use_monero_price_decimals = $this->settings['use_monero_price_decimals'];
 
-        $explorer_url = self::$testnet ? MONERO_GATEWAY_TESTNET_EXPLORER_URL : MONERO_GATEWAY_MAINNET_EXPLORER_URL;
+        $default_explorer_url = self::$testnet ? MONERO_GATEWAY_TESTNET_EXPLORER_URL : MONERO_GATEWAY_MAINNET_EXPLORER_URL;
+        $explorer_url = self::$explorer_url ?: $default_explorer_url;
         defined('MONERO_GATEWAY_EXPLORER_URL') || define('MONERO_GATEWAY_EXPLORER_URL', $explorer_url);
 
         // Add the currency of the shop to $currencies array. Needed for do_update_event() function
@@ -101,7 +104,7 @@ class Monero_Gateway extends WC_Payment_Gateway
             self::$monero_wallet_rpc = new Monero_Wallet_Rpc(self::$host, self::$port);
         } else {
             require_once('class-monero-explorer-tools.php');
-            self::$monero_explorer_tools = new Monero_Explorer_Tools(self::$testnet);
+            self::$monero_explorer_tools = new Monero_Explorer_Tools(self::$testnet, self::$explorer_url);
         }
 
         self::$log = new WC_Logger();
@@ -134,6 +137,16 @@ class Monero_Gateway extends WC_Payment_Gateway
             }
         }
         return $viewkey;
+    }
+
+    public function validate_explorer_url_field($key,$explorer_url)
+    {
+        $explorer_url = trim($explorer_url);
+        if($explorer_url !== '' && !filter_var($explorer_url, FILTER_VALIDATE_URL)) {
+            self::$_errors[] = 'Block Explorer URL is invalid';
+            return '';
+        }
+        return $explorer_url;
     }
 
     public function validate_confirms_field($key,$confirms)

@@ -65,6 +65,13 @@ return array(
         'type' => 'text',
         'desc_tip' => __('Your secret Viewkey', 'monero_gateway')
     ),
+    'explorer_url' => array(
+        'title' => __('Block Explorer URL', 'monero_gateway'),
+        'label' => __('Block Explorer URL'),
+        'type' => 'text',
+        'desc_tip' => __('Used only in viewkey mode. Leave blank to use the default (https://xmrchain.net/). Point this at your own self-hosted onion-monero-blockchain-explorer instance if the default becomes unavailable.', 'monero_gateway'),
+        'default' => ''
+    ),
     'daemon_host' => array(
         'title' => __('Monero wallet RPC Host/IP', 'monero_gateway'),
         'type' => 'text',

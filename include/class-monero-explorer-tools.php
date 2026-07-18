@@ -16,9 +16,11 @@ defined( 'ABSPATH' ) || exit;
 class Monero_Explorer_Tools
 {
     private $url;
-    public function __construct($testnet = false)
+    public function __construct($testnet = false, $custom_url = '')
     {
-        $this->url = $testnet ? MONERO_GATEWAY_TESTNET_EXPLORER_URL : MONERO_GATEWAY_MAINNET_EXPLORER_URL;
+        $custom_url = trim($custom_url);
+        $default_url = $testnet ? MONERO_GATEWAY_TESTNET_EXPLORER_URL : MONERO_GATEWAY_MAINNET_EXPLORER_URL;
+        $this->url = $custom_url !== '' ? $custom_url : $default_url;
         $this->url = preg_replace("/\/+$/", "", $this->url);
     }
 

@@ -26,11 +26,13 @@ function moneroUpdateFields() {
     if(confirmType == "monero-wallet-rpc") {
         jQuery("#woocommerce_monero_gateway_monero_address").closest("tr").hide();
         jQuery("#woocommerce_monero_gateway_viewkey").closest("tr").hide();
+        jQuery("#woocommerce_monero_gateway_explorer_url").closest("tr").hide();
         jQuery("#woocommerce_monero_gateway_daemon_host").closest("tr").show();
         jQuery("#woocommerce_monero_gateway_daemon_port").closest("tr").show();
     } else {
         jQuery("#woocommerce_monero_gateway_monero_address").closest("tr").show();
         jQuery("#woocommerce_monero_gateway_viewkey").closest("tr").show();
+        jQuery("#woocommerce_monero_gateway_explorer_url").closest("tr").show();
         jQuery("#woocommerce_monero_gateway_daemon_host").closest("tr").hide();
         jQuery("#woocommerce_monero_gateway_daemon_port").closest("tr").hide();
     }
