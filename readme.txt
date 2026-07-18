@@ -27,6 +27,12 @@ If you'd like to support my work maintaining this fork, feel free to send some M
 
 85wtMBt1hhPJk4LAE6eiez37dx42KKxhUFzvJ1BBWW1j1LujLjDiXBdCYXbEW1ZTHR6VkKbpvdjXiMXLqf9coD3G2Dj6koo
 
+= Verifying commits =
+
+Commits and tags in this repo are signed with my PGP key. The public key is in pgp-public-key.asc; verify it matches this fingerprint before trusting a signature:
+
+E8C0 F756 E611 3813 7DFF  39BE F1FD 97FD 5D2A AA2C
+
 = Benefits =
 
 * Payment validation done through either `monero-wallet-rpc` or the [xmrchain.net blockchain explorer](https://xmrchain.net/).
