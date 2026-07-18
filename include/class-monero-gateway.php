@@ -326,7 +326,15 @@ class Monero_Gateway extends WC_Payment_Gateway
         $table_name_1 = $wpdb->prefix.'monero_gateway_quotes';
         $table_name_2 = $wpdb->prefix.'monero_gateway_quotes_txids';
 
-        $query = $wpdb->prepare("SELECT *, $table_name_1.payment_id AS payment_id, $table_name_1.amount AS amount_total, $table_name_2.amount AS amount_paid, NOW() as now FROM $table_name_1 LEFT JOIN $table_name_2 ON $table_name_1.payment_id = $table_name_2.payment_id WHERE pending=1", array());
+        // Besides still-pending orders, also re-check recently paid orders
+        // that have a transaction stuck at height=0. This happens when an
+        // order confirms straight from the mempool (e.g. confirms=0) before
+        // the transaction is mined; pending is already 0 at that point so
+        // the main WHERE clause alone would never look at it again and the
+        // displayed height would stay stuck at "N/A" forever. Bound this to
+        // the last day so we don't rescan very old orders indefinitely if a
+        // transaction never ends up in a block.
+        $query = $wpdb->prepare("SELECT *, $table_name_1.payment_id AS payment_id, $table_name_1.amount AS amount_total, $table_name_2.amount AS amount_paid, NOW() as now FROM $table_name_1 LEFT JOIN $table_name_2 ON $table_name_1.payment_id = $table_name_2.payment_id WHERE pending=1 OR (paid=1 AND $table_name_2.height=0 AND $table_name_1.created > DATE_SUB(NOW(), INTERVAL 1 DAY))", array());
         $rows = $wpdb->get_results($query);
 
         $pending_payments = array();
@@ -348,7 +356,6 @@ class Monero_Gateway extends WC_Payment_Gateway
             $quote = $pending['quote'];
             $old_txs = $pending['txs'];
             $order_id = $quote->order_id;
-            $order = wc_get_order($order_id);
             $payment_id = self::sanatize_id($quote->payment_id);
             $amount_monero = $quote->amount_total;
 
@@ -372,6 +379,16 @@ class Monero_Gateway extends WC_Payment_Gateway
                 $query = $wpdb->prepare("INSERT INTO $table_name_2 (payment_id, txid, amount, height) VALUES (%s, %s, %d, %d) ON DUPLICATE KEY UPDATE height=%d", array($payment_id, $new_tx['txid'], $new_tx['amount'], $new_tx['height'], $new_tx['height']));
                 $wpdb->query($query);
             }
+
+            if(!$quote->pending) {
+                // Order was already paid/confirmed; we only re-checked it to
+                // backfill a transaction's block height once it gets mined.
+                // No status transition to run.
+                unset(self::$payment_details[$order_id]);
+                continue;
+            }
+
+            $order = wc_get_order($order_id);
 
             $txs = $old_txs;
             $heights = array();
