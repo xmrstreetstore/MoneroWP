@@ -97,6 +97,7 @@ Note on security: using this option, while the most secure, requires you to run 
 = 2.1.1 (fork) =
 * Fix payment confirmation detection in viewkey mode, broken by an xmrchain.net API change (fixes upstream #129)
 * Add configurable Block Explorer URL setting for viewkey mode
+* Fix transaction height showing "N/A" forever on zero-confirm (confirms=0) orders once paid
 
 = 0.1 =
 * First version ! Yay!

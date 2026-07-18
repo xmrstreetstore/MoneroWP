@@ -2,6 +2,12 @@
 
 > **This is an unofficial community fork** of [monero-integrations/monerowp](https://github.com/monero-integrations/monerowp), maintained here to carry fixes the upstream project hadn't merged. It restores payment confirmation detection in viewkey mode, which broke when the [xmrchain.net](https://xmrchain.net/) explorer API changed (see [upstream issue #129](https://github.com/monero-integrations/monerowp/issues/129)), and adds a setting to point at a different block explorer instance. All credit for the original plugin goes to SerHack, mosu-forge, and the Monero Integrations contributors; see [LICENSE](LICENSE) (MIT).
 
+### What's changed in this fork (v2.1.1)
+
+* Fix payment confirmation detection in viewkey mode, broken by an xmrchain.net API change (fixes upstream #129)
+* Add configurable Block Explorer URL setting for viewkey mode
+* Fix transaction height showing "N/A" forever on zero-confirm (`confirms=0`) orders once paid
+
 ### Already have the original plugin installed?
 
 You don't need to reinstall from scratch. Just replace these 4 files in your existing `monerowp` (or `monero-woocommerce-gateway`) plugin folder with the versions from this repo, then reload the gateway settings page once to pick up the new option:
