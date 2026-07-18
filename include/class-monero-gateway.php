@@ -384,6 +384,23 @@ class Monero_Gateway extends WC_Payment_Gateway
                 // Order was already paid/confirmed; we only re-checked it to
                 // backfill a transaction's block height once it gets mined.
                 // No status transition to run.
+                //
+                // check_payment_explorer() above only scans the last few
+                // blocks (plus mempool), so a transaction whose block has
+                // already scrolled out of that window won't be caught by
+                // it. Look those up directly instead, since we already
+                // know their txid.
+                if(self::$confirm_type != 'monero-wallet-rpc') {
+                    foreach($old_txs as $tx) {
+                        if($tx->height != 0)
+                            continue;
+                        $mined_height = self::$monero_explorer_tools->get_tx_height($tx->txid, self::$address, self::$viewkey, $height);
+                        if($mined_height > 0) {
+                            $query = $wpdb->prepare("UPDATE $table_name_2 SET height=%d WHERE payment_id=%s AND txid=%s", array($mined_height, $payment_id, $tx->txid));
+                            $wpdb->query($query);
+                        }
+                    }
+                }
                 unset(self::$payment_details[$order_id]);
                 continue;
             }

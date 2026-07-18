@@ -80,6 +80,27 @@ class Monero_Explorer_Tools
             return [];
     }
 
+    // Looks up the block height of a single, already-known transaction
+    // directly, instead of scanning the (max 5 block) window get_outputs()
+    // is limited to. Used to backfill the height of a transaction that was
+    // first seen in the mempool and has since been mined, but whose block
+    // has scrolled out of that window before we could re-detect it there.
+    // $tip_height must be the current network height as returned by
+    // get_last_block_height()/getheight(). Returns 0 if the tx is still
+    // unconfirmed or the lookup fails.
+    public function get_tx_height($tx_hash, $address, $viewkey, $tip_height)
+    {
+        $data = $this->call_api("/api/outputs?txhash=$tx_hash&address=$address&viewkey=$viewkey&txprove=0");
+        if(!isset($data['status']) || $data['status'] != 'success')
+            return 0;
+
+        $confirmations = isset($data['data']['tx_confirmations']) ? intval($data['data']['tx_confirmations']) : 0;
+        if($confirmations <= 0)
+            return 0;
+
+        return max(0, $tip_height + 1 - $confirmations);
+    }
+
     public function check_tx($tx_hash, $address, $viewkey)
     {
         $data = $this->call_api("/api/outputs?txhash=$tx_hash&address=$address&viewkey=$viewkey&txprove=0");
