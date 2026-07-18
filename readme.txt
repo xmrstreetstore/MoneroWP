@@ -94,7 +94,7 @@ Note on security: using this option, while the most secure, requires you to run 
 
 == Changelog ==
 
-= 2.1.2 (fork) =
+= 2.1.3 (fork) =
 * Security fix: independently re-verify every transaction the block explorer reports as a payment match before crediting it, instead of trusting its claimed amount/txid/height outright. The explorer's block-scan endpoint was observed reporting matches for txids that do not exist anywhere on-chain, which could inflate an order's recorded amount_paid with money that was never sent.
 * Fix transaction height staying stuck on "N/A" for a real, confirmed transaction whose block had already scrolled past the explorer's 5-block scan window by the time the height backfill ran
 
