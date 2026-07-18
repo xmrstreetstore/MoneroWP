@@ -13,6 +13,12 @@ You don't need to reinstall from scratch. Just replace these 4 files in your exi
 
 No database changes or plugin reactivation required.
 
+If you'd like to support my work maintaining this fork, feel free to send some Monero here — thanks!
+
+`85wtMBt1hhPJk4LAE6eiez37dx42KKxhUFzvJ1BBWW1j1LujLjDiXBdCYXbEW1ZTHR6VkKbpvdjXiMXLqf9coD3G2Dj6koo`
+
+![Donate Monero](/assets/images/donate-qr.png?raw=true "Donate Monero")
+
 ## Features
 
 * Payment validation done through either `monero-wallet-rpc` or the [xmrchain.net blockchain explorer](https://xmrchain.net/).
