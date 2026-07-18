@@ -37,7 +37,7 @@ class Monero_Explorer_Tools
     public function get_last_block_height()
     {
         $data = $this->call_api('/api/networkinfo');
-        if($data['status'] == 'success')
+        if(isset($data['status']) && $data['status'] == 'success')
             return $data['data']['height'] - 1;
         else
             return 0;
@@ -51,7 +51,7 @@ class Monero_Explorer_Tools
     public function get_txs_from_block($height)
     {
         $data = $this->call_api("/api/search/$height");
-        if($data['status'] == 'success')
+        if(isset($data['status']) && $data['status'] == 'success')
             return $data['data']['txs'];
         else
             return [];
@@ -59,8 +59,20 @@ class Monero_Explorer_Tools
 
     public function get_outputs($address, $viewkey)
     {
-        $data = $this->call_api("/api/outputsblocks?address=$address&viewkey=$viewkey&limit=5&mempool=1");
-        if($data['status'] == 'success')
+        // The explorer's /api/outputsblocks endpoint requires an explicit
+        // startblock/endblock range and rejects requests spanning more than
+        // 5 blocks. Stay one block behind the tip returned by /api/networkinfo
+        // so a block found between the two calls can't push endblock past
+        // what the explorer considers the current height.
+        $height = $this->get_last_block_height();
+        if($height <= 0)
+            return [];
+
+        $end_block = max(0, $height - 1);
+        $start_block = max(0, $end_block - 4);
+
+        $data = $this->call_api("/api/outputsblocks?address=$address&viewkey=$viewkey&startblock=$start_block&endblock=$end_block&mempool=1");
+        if(isset($data['status']) && $data['status'] == 'success')
             return $data['data']['outputs'];
         else
             return [];
@@ -69,20 +81,19 @@ class Monero_Explorer_Tools
     public function check_tx($tx_hash, $address, $viewkey)
     {
         $data = $this->call_api("/api/outputs?txhash=$tx_hash&address=$address&viewkey=$viewkey&txprove=0");
-        if($data['status'] == 'success') {
+        if(isset($data['status']) && $data['status'] == 'success') {
             foreach($data['data']['outputs'] as $output) {
                 if($output['match'])
                     return true;
             }
-        } else {
-            return false;
         }
+        return false;
     }
 
     function get_mempool_txs()
     {
         $data = $this->call_api('/api/mempool');
-        if($data['status'] == 'success')
+        if(isset($data['status']) && $data['status'] == 'success')
             return $data['txs'];
         else
             return [];
