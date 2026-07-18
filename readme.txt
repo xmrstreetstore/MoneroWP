@@ -12,6 +12,17 @@ Monero WooCommerce Extension is a Wordpress plugin that allows to accept monero 
 
 This is an unofficial community fork of the original plugin (https://github.com/monero-integrations/monerowp), maintained to carry fixes upstream hadn't merged, including restoring payment confirmation detection in viewkey mode after the xmrchain.net explorer API changed (upstream issue #129). All credit for the original plugin goes to SerHack, mosu-forge, and the Monero Integrations contributors.
 
+= Already have the original plugin installed? =
+
+You don't need to reinstall from scratch. Just replace these 4 files in your existing plugin folder with the versions from this repo, then reload the gateway settings page once to pick up the new option:
+
+* include/class-monero-explorer-tools.php
+* include/class-monero-gateway.php
+* include/admin/monero-gateway-admin-settings.php
+* templates/monero-gateway/admin/settings-page.php
+
+No database changes or plugin reactivation required.
+
 = Benefits =
 
 * Payment validation done through either `monero-wallet-rpc` or the [xmrchain.net blockchain explorer](https://xmrchain.net/).
