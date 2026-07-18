@@ -80,37 +80,65 @@ class Monero_Explorer_Tools
             return [];
     }
 
-    // Looks up the block height of a single, already-known transaction
-    // directly, instead of scanning the (max 5 block) window get_outputs()
-    // is limited to. Used to backfill the height of a transaction that was
-    // first seen in the mempool and has since been mined, but whose block
-    // has scrolled out of that window before we could re-detect it there.
-    // $tip_height must be the current network height as returned by
+    // Looks up a single, already-known transaction directly by hash,
+    // independent of the (max 5 block) window get_outputs() is limited to.
+    private function lookup_tx($tx_hash, $address, $viewkey)
+    {
+        $data = $this->call_api("/api/outputs?txhash=$tx_hash&address=$address&viewkey=$viewkey&txprove=0");
+        if(!isset($data['status']) || $data['status'] != 'success' || !isset($data['data']))
+            return null;
+        return $data['data'];
+    }
+
+    // Used to backfill the height of a transaction that was first seen in
+    // the mempool and has since been mined, but whose block has scrolled
+    // out of get_outputs()'s scan window before we could re-detect it
+    // there. $tip_height must be the current network height as returned by
     // get_last_block_height()/getheight(). Returns 0 if the tx is still
     // unconfirmed or the lookup fails.
     public function get_tx_height($tx_hash, $address, $viewkey, $tip_height)
     {
-        $data = $this->call_api("/api/outputs?txhash=$tx_hash&address=$address&viewkey=$viewkey&txprove=0");
-        if(!isset($data['status']) || $data['status'] != 'success')
+        $data = $this->lookup_tx($tx_hash, $address, $viewkey);
+        if($data === null)
             return 0;
 
-        $confirmations = isset($data['data']['tx_confirmations']) ? intval($data['data']['tx_confirmations']) : 0;
+        $confirmations = isset($data['tx_confirmations']) ? intval($data['tx_confirmations']) : 0;
         if($confirmations <= 0)
             return 0;
 
         return max(0, $tip_height + 1 - $confirmations);
     }
 
-    public function check_tx($tx_hash, $address, $viewkey)
+    // Independently re-verifies a transaction that get_outputs() (the
+    // block-range scan) claimed matches our address/payment_id, instead of
+    // trusting its reported amount/height. get_outputs() has been observed
+    // to report matches for txids that don't exist on-chain at all; this
+    // re-derives the match, amount, and height from the separate, per-tx
+    // endpoint before anything is credited as a real payment. Returns
+    // false if the transaction doesn't genuinely match, otherwise an array
+    // with 'amount' (sum of matched outputs, atomic units) and 'height'
+    // (0 if still unconfirmed).
+    public function verify_output($tx_hash, $address, $viewkey, $tip_height)
     {
-        $data = $this->call_api("/api/outputs?txhash=$tx_hash&address=$address&viewkey=$viewkey&txprove=0");
-        if(isset($data['status']) && $data['status'] == 'success') {
-            foreach($data['data']['outputs'] as $output) {
-                if($output['match'])
-                    return true;
+        $data = $this->lookup_tx($tx_hash, $address, $viewkey);
+        if($data === null || !isset($data['outputs']))
+            return false;
+
+        $amount = 0;
+        $matched = false;
+        foreach($data['outputs'] as $output) {
+            if(!empty($output['match'])) {
+                $matched = true;
+                $amount += intval($output['amount']);
             }
         }
-        return false;
+        if(!$matched)
+            return false;
+
+        $confirmations = isset($data['tx_confirmations']) ? intval($data['tx_confirmations']) : 0;
+        $height = $confirmations > 0 ? max(0, $tip_height + 1 - $confirmations) : 0;
+
+        return array('amount' => $amount, 'height' => $height);
     }
 
     function get_mempool_txs()

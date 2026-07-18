@@ -362,7 +362,7 @@ class Monero_Gateway extends WC_Payment_Gateway
             if(self::$confirm_type == 'monero-wallet-rpc')
                 $new_txs = self::check_payment_rpc($payment_id);
             else
-                $new_txs = self::check_payment_explorer($payment_id);
+                $new_txs = self::check_payment_explorer($payment_id, $height);
 
             foreach($new_txs as $new_tx) {
                 $is_new_tx = true;
@@ -502,18 +502,36 @@ class Monero_Gateway extends WC_Payment_Gateway
         return $txs;
     }
 
-    public static function check_payment_explorer($payment_id)
+    public static function check_payment_explorer($payment_id, $height)
     {
         $txs = array();
         $outputs = self::$monero_explorer_tools->get_outputs(self::$address, self::$viewkey);
+        $checked = array();
         foreach($outputs as $payment) {
-            if($payment['payment_id'] == $payment_id) {
-                $txs[] = array(
-                    'amount' => $payment['amount'],
-                    'txid' => $payment['tx_hash'],
-                    'height' => $payment['block_no']
-                );
+            if($payment['payment_id'] != $payment_id)
+                continue;
+
+            $tx_hash = $payment['tx_hash'];
+            if(isset($checked[$tx_hash]))
+                continue;
+            $checked[$tx_hash] = true;
+
+            // Never trust the block-scan endpoint's claimed amount/height
+            // on its own word -- it has been observed to report matches
+            // for txids that don't exist on-chain at all. Independently
+            // re-verify this specific transaction via a separate lookup
+            // before crediting it as a payment.
+            $verified = self::$monero_explorer_tools->verify_output($tx_hash, self::$address, self::$viewkey, $height);
+            if($verified === false) {
+                self::$log->add('Monero_Payments', "[WARNING] Explorer reported a match for txid $tx_hash that failed independent verification; ignoring it.");
+                continue;
             }
+
+            $txs[] = array(
+                'amount' => $verified['amount'],
+                'txid' => $tx_hash,
+                'height' => $verified['height']
+            );
         }
         return $txs;
     }
