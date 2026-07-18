@@ -1,5 +1,7 @@
 # Monero Gateway for WooCommerce
 
+> **This is an unofficial community fork** of [monero-integrations/monerowp](https://github.com/monero-integrations/monerowp), maintained here to carry fixes the upstream project hadn't merged. It restores payment confirmation detection in viewkey mode, which broke when the [xmrchain.net](https://xmrchain.net/) explorer API changed (see [upstream issue #129](https://github.com/monero-integrations/monerowp/issues/129)), and adds a setting to point at a different block explorer instance. All credit for the original plugin goes to SerHack, mosu-forge, and the Monero Integrations contributors; see [LICENSE](LICENSE) (MIT).
+
 ## Features
 
 * Payment validation done through either `monero-wallet-rpc` or the [xmrchain.net blockchain explorer](https://xmrchain.net/).
@@ -63,6 +65,7 @@ Note on security: using this option, while the most secure, requires you to run 
 * `Confirmation Type` - Confirm transactions with either your viewkey, or by using `monero-wallet-rpc`. (Default: viewkey)
 * `Monero Address` (if confirmation type is viewkey) - Your public Monero address starting with 4. (No default)
 * `Secret Viewkey` (if confirmation type is viewkey) - Your *private* viewkey (No default)
+* `Block Explorer URL` (if confirmation type is viewkey) - Block explorer API used to check for payments. Leave blank to use the default (xmrchain.net), or point it at your own self-hosted [onion-monero-blockchain-explorer](https://github.com/moneroexamples/onion-monero-blockchain-explorer) instance if the default becomes unavailable. (Default: xmrchain.net)
 * `Monero wallet RPC Host/IP` (if confirmation type is `monero-wallet-rpc`) - IP address where the wallet rpc is running. It is highly discouraged to run the wallet anywhere other than the local server! (Default: 127.0.0.1)
 * `Monero wallet RPC port` (if confirmation type is `monero-wallet-rpc`) - Port the wallet rpc is bound to with the `--rpc-bind-port` argument. (Default 18080)
 * `Testnet` - Check this to change the blockchain explorer links to the testnet explorer. (Default: unchecked)
