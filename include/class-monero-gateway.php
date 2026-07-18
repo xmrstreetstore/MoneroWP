@@ -380,27 +380,20 @@ class Monero_Gateway extends WC_Payment_Gateway
                 $wpdb->query($query);
             }
 
+            // A transaction still sitting at height 0 blocks confirmation
+            // forever below (in_array(0, $heights)), and cosmetically
+            // never leaves "N/A" once an order is done, if it never gets
+            // resolved. check_payment_explorer() only re-detects it while
+            // its block is within the scan window; once it scrolls out,
+            // an order needing confirms>0 would otherwise never be able
+            // to progress, silently re-polling every cron run with no way
+            // to complete. Resolve it directly instead of relying on the
+            // window catching it in time.
+            self::backfill_tx_heights($old_txs, $payment_id, $height);
+
             if(!$quote->pending) {
-                // Order was already paid/confirmed; we only re-checked it to
-                // backfill a transaction's block height once it gets mined.
-                // No status transition to run.
-                //
-                // check_payment_explorer() above only scans the last few
-                // blocks (plus mempool), so a transaction whose block has
-                // already scrolled out of that window won't be caught by
-                // it. Look those up directly instead, since we already
-                // know their txid.
-                if(self::$confirm_type != 'monero-wallet-rpc') {
-                    foreach($old_txs as $tx) {
-                        if($tx->height != 0)
-                            continue;
-                        $mined_height = self::$monero_explorer_tools->get_tx_height($tx->txid, self::$address, self::$viewkey, $height);
-                        if($mined_height > 0) {
-                            $query = $wpdb->prepare("UPDATE $table_name_2 SET height=%d WHERE payment_id=%s AND txid=%s", array($mined_height, $payment_id, $tx->txid));
-                            $wpdb->query($query);
-                        }
-                    }
-                }
+                // Order was already paid/confirmed; no status transition
+                // to run, we only needed the height backfill above.
                 unset(self::$payment_details[$order_id]);
                 continue;
             }
@@ -465,6 +458,31 @@ class Monero_Gateway extends WC_Payment_Gateway
 
                     $order->update_status('cancelled', __('Payment has expired.', 'monero_gateway'));
                 }
+            }
+        }
+    }
+
+    // Resolves the height of any transaction in $old_txs still sitting at
+    // 0, by looking it up directly instead of relying on it still being
+    // within check_payment_explorer()'s scan window. Mutates the height on
+    // the objects in $old_txs in place and persists it to the DB. No-op
+    // for monero-wallet-rpc, which has no such window to begin with.
+    protected static function backfill_tx_heights($old_txs, $payment_id, $height)
+    {
+        if(self::$confirm_type == 'monero-wallet-rpc')
+            return;
+
+        global $wpdb;
+        $table_name_2 = $wpdb->prefix.'monero_gateway_quotes_txids';
+
+        foreach($old_txs as $tx) {
+            if($tx->height != 0)
+                continue;
+            $mined_height = self::$monero_explorer_tools->get_tx_height($tx->txid, self::$address, self::$viewkey, $height);
+            if($mined_height > 0) {
+                $tx->height = $mined_height;
+                $query = $wpdb->prepare("UPDATE $table_name_2 SET height=%d WHERE payment_id=%s AND txid=%s", array($mined_height, $payment_id, $tx->txid));
+                $wpdb->query($query);
             }
         }
     }
